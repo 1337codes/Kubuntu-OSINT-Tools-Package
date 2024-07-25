@@ -91,7 +91,7 @@ install_tor_browser() {
     else
         echo "start-tor-browser.desktop not found in $tor_browser_dir"
         add_to_error_log "start-tor-browser.desktop not found in $tor_browser_dir"
-        return 1
+        return 1;
     fi
 }
 
@@ -101,7 +101,7 @@ install_phoneinfoga() {
     if [ ! -f "./phoneinfoga" ]; then
         echo "PhoneInfoga executable not found after installation script."
         add_to_error_log "PhoneInfoga executable not found after installation script."
-        return 1
+        return 1;
     fi
 
     sudo mv ./phoneinfoga /usr/local/bin/phoneinfoga || { echo "Failed to move PhoneInfoga to /usr/local/bin"; add_to_error_log "Failed to move PhoneInfoga to /usr/local/bin"; return 1; }
@@ -120,12 +120,6 @@ install_python_packages() {
     python3 -m pip install onionsearch || { echo "Failed to install onionsearch"; add_to_error_log "Failed to install onionsearch"; }
 
     deactivate
-}
-
-install_sn0int() {
-    # Updated installation method due to repository issues
-    echo "Unable to install sn0int from external repository. Please install it manually if needed."
-    add_to_error_log "Unable to install sn0int from external repository. Please install it manually if needed."
 }
 
 update_tj_null_joplin_notebook() {
@@ -148,7 +142,6 @@ install_tools
 install_tor_browser
 install_phoneinfoga
 install_python_packages
-install_sn0int
 update_tj_null_joplin_notebook
 
 display_log_contents
