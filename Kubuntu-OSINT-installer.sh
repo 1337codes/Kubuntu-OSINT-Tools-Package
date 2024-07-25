@@ -78,7 +78,10 @@ install_tor_browser() {
     curl -L "$tor_browser_link" -o "$tor_browser_tarball" || { echo "Failed to download Tor Browser"; add_to_error_log "Failed to download Tor Browser"; return 1; }
     curl -L "${tor_browser_link}.asc" -o "${tor_browser_tarball}.asc" || { echo "Failed to download Tor Browser signature"; add_to_error_log "Failed to download Tor Browser signature"; return 1; }
 
-    gpgv --keyring /usr/share/keyrings/tor-browser.gpg "${tor_browser_tarball}.asc" "$tor_browser_tarball" || { echo "Failed to verify Tor Browser signature"; add_to_error_log "Failed to verify Tor Browser signature"; return 1; }
+    # Import Tor Browser GPG key
+    gpg --keyserver hkp://keys.gnupg.net --recv-keys 0x4E2C6E8793298290 || { echo "Failed to import Tor Browser GPG key"; add_to_error_log "Failed to import Tor Browser GPG key"; return 1; }
+
+    gpgv --keyring ~/.gnupg/pubring.kbx "${tor_browser_tarball}.asc" "$tor_browser_tarball" || { echo "Failed to verify Tor Browser signature"; add_to_error_log "Failed to verify Tor Browser signature"; return 1; }
 
     tar -xf "$tor_browser_tarball" -C "$download_dir" || { echo "Failed to extract Tor Browser"; add_to_error_log "Failed to extract Tor Browser"; return 1; }
 
@@ -109,9 +112,14 @@ install_python_packages() {
     pipx install h8mail || { echo "Failed to install h8mail"; add_to_error_log "Failed to install h8mail"; }
     pipx install toutatis || { echo "Failed to install toutatis"; add_to_error_log "Failed to install toutatis"; }
 
-    python3 -m pip install --user dnsdumpster || { echo "Failed to install dnsdumpster"; add_to_error_log "Failed to install dnsdumpster"; }
-    python3 -m pip install --user tweepy || { echo "Failed to install tweepy"; add_to_error_log "Failed to install tweepy"; }
-    python3 -m pip install --user onionsearch || { echo "Failed to install onionsearch"; add_to_error_log "Failed to install onionsearch"; }
+    python3 -m venv osint-env || { echo "Failed to create virtual environment"; add_to_error_log "Failed to create virtual environment"; return 1; }
+    source osint-env/bin/activate || { echo "Failed to activate virtual environment"; add_to_error_log "Failed to activate virtual environment"; return 1; }
+
+    python3 -m pip install dnsdumpster || { echo "Failed to install dnsdumpster"; add_to_error_log "Failed to install dnsdumpster"; }
+    python3 -m pip install tweepy || { echo "Failed to install tweepy"; add_to_error_log "Failed to install tweepy"; }
+    python3 -m pip install onionsearch || { echo "Failed to install onionsearch"; add_to_error_log "Failed to install onionsearch"; }
+
+    deactivate
 }
 
 install_sn0int() {
@@ -121,10 +129,10 @@ install_sn0int() {
 }
 
 update_tj_null_joplin_notebook() {
-    if [ -d "~/Desktop/TJ-OSINT-Notebook" ]; then
-        cd ~/Desktop/TJ-OSINT-Notebook && git pull || { echo "Failed to update TJ-OSINT-Notebook"; add_to_error_log "Failed to update TJ-OSINT-Notebook"; return 1; }
+    if [ -d "$HOME/Desktop/TJ-OSINT-Notebook" ]; then
+        cd "$HOME/Desktop/TJ-OSINT-Notebook" && git pull || { echo "Failed to update TJ-OSINT-Notebook"; add_to_error_log "Failed to update TJ-OSINT-Notebook"; return 1; }
     else
-        cd ~/Desktop && git clone https://github.com/tjnull/TJ-OSINT-Notebook.git || { echo "Failed to clone TJ-OSINT-Notebook"; add_to_error_log "Failed to clone TJ-OSINT-Notebook"; return 1; }
+        cd "$HOME/Desktop" && git clone https://github.com/tjnull/TJ-OSINT-Notebook.git || { echo "Failed to clone TJ-OSINT-Notebook"; add_to_error_log "Failed to clone TJ-OSINT-Notebook"; return 1; }
     fi
 }
 
