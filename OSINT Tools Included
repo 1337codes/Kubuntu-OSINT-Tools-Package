@@ -46,7 +46,6 @@ The OSINT Tools Installer for Kubuntu sets up the following tools:
 - **toutatis**: A tool for domain and DNS enumeration (installed via pipx).
 - **tweepy**: A library for accessing the Twitter API (installed via pip3).
 - **onionsearch**: A tool for searching hidden services (installed via pip3).
-- **sn0int**: A powerful open-source intelligence gathering tool (installed via APT).
 
 This collection of tools provides a comprehensive suite for performing various OSINT tasks, including web crawling, metadata extraction, social network analysis, and more.
 
