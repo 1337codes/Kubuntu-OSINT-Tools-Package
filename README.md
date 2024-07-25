@@ -51,24 +51,3 @@ sudo ./Kubuntu-OSINT-installer.sh
 By following these instructions, you will set up the necessary OSINT tools on your Kubuntu system.
 
 ---
-
-
-### Instructions for Manual Installation of `sn0int`
-As the script cannot automate the installation of `sn0int` due to repository issues, please follow these steps manually:
-
-1. **Download the latest release** from the [sn0int GitHub releases page](https://github.com/kpcyrd/sn0int/releases).
-
-2. **Extract the binary**:
-   ```bash
-   tar -xvf sn0int-*.tar.gz
-   ```
-
-3. **Move the binary to `/usr/local/bin`**:
-   ```bash
-   sudo mv sn0int /usr/local/bin/
-   ```
-
-4. **Verify installation**:
-   ```bash
-   sn0int --version
-   ```
