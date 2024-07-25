@@ -41,6 +41,7 @@ display_log_contents() {
 
 # Function to update and upgrade the system
 update_system() {
+    sudo sed -i '/^deb .*vulns\.sexy/d' /etc/apt/sources.list /etc/apt/sources.list.d/*.list
     sudo apt-get update || { echo "Failed to update package lists"; add_to_error_log "Failed to update package lists"; }
     sudo apt-get dist-upgrade -y || { echo "Failed to upgrade the system"; add_to_error_log "Failed to upgrade the system"; }
 }
@@ -79,7 +80,7 @@ install_tor_browser() {
     curl -L "${tor_browser_link}.asc" -o "${tor_browser_tarball}.asc" || { echo "Failed to download Tor Browser signature"; add_to_error_log "Failed to download Tor Browser signature"; return 1; }
 
     # Import Tor Browser GPG key
-    gpg --keyserver hkp://keys.gnupg.net --recv-keys 0x4E2C6E8793298290 || { echo "Failed to import Tor Browser GPG key"; add_to_error_log "Failed to import Tor Browser GPG key"; return 1; }
+    gpg --keyserver hkps://keys.openpgp.org --recv-keys 0x4E2C6E8793298290 || { echo "Failed to import Tor Browser GPG key"; add_to_error_log "Failed to import Tor Browser GPG key"; return 1; }
 
     gpgv --keyring ~/.gnupg/pubring.kbx "${tor_browser_tarball}.asc" "$tor_browser_tarball" || { echo "Failed to verify Tor Browser signature"; add_to_error_log "Failed to verify Tor Browser signature"; return 1; }
 
@@ -91,7 +92,7 @@ install_tor_browser() {
     else
         echo "start-tor-browser.desktop not found in $tor_browser_dir"
         add_to_error_log "start-tor-browser.desktop not found in $tor_browser_dir"
-        return 1;
+        return 1
     fi
 }
 
