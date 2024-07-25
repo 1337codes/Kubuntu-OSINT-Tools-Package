@@ -107,11 +107,11 @@ install_phoneinfoga() {
 
     if [ ! -f "./phoneinfoga" ]; then
         echo "PhoneInfoga executable not found after installation script."
-        add_to_error_log "PhoneInfoga executable not found after installation script."
+        add_to_error_log "Phoneinfoga executable not found after installation script."
         return 1
     fi
 
-    sudo install ./phoneinfoga /usr/local/bin/phoneinfoga || { echo "Failed to install PhoneInfoga globally"; add_to_error_log "Failed to install PhoneInfoga globally"; return 1; }
+    sudo install ./phoneinfoga /usr/local/bin/phoneinfoga || { echo "Failed to install Phoneinfoga globally"; add_to_error_log "Failed to install Phoneinfoga globally"; return 1; }
 }
 
 install_python_packages() {
