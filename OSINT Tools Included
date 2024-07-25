@@ -1,0 +1,53 @@
+## OSINT Tools Included
+
+The OSINT Tools Installer for Kubuntu sets up the following tools:
+
+### Tools Installed via APT
+
+- **spiderfoot**: An open-source intelligence automation tool.
+- **sherlock**: A tool for finding usernames across multiple social networks.
+- **maltego**: A tool for open-source intelligence and forensics.
+- **python3-shodan**: Python client for the Shodan search engine.
+- **theharvester**: A tool for gathering emails, subdomains, and more.
+- **webhttrack**: A website copier.
+- **outguess**: A tool for steganography.
+- **stegosuite**: A set of tools for analyzing and manipulating steganographic content.
+- **wireshark**: A network protocol analyzer.
+- **metagoofil**: A tool for extracting metadata of public documents.
+- **eyewitness**: A tool for taking screenshots of websites.
+- **exifprobe**: A tool for analyzing image metadata.
+- **ruby-bundler**: Manages Ruby gem dependencies.
+- **recon-ng**: A full-featured Web Reconnaissance framework.
+- **cherrytree**: A hierarchical note-taking application.
+- **instaloader**: A tool to download Instagram photos, videos, and metadata.
+- **photon**: A fast and flexible web crawler.
+- **sublist3r**: A tool for discovering subdomains.
+- **osrframework**: Open-source intelligence framework.
+- **joplin**: An open-source note-taking and to-do application.
+- **drawing**: A graphical editor.
+- **finalrecon**: A reconnaissance tool.
+- **cargo**: The Rust package manager.
+- **pkg-config**: A tool to provide compiler and linker flags.
+- **curl**: A command-line tool for transferring data with URLs.
+- **python3-pip**: A package manager for Python.
+- **pipx**: A tool to install and run Python applications in isolated environments.
+- **python3-exifread**: A library for reading EXIF metadata from images.
+- **python3-fake-useragent**: A library to generate fake user-agent strings.
+- **yt-dlp**: A command-line program to download videos from YouTube and other sites.
+- **keepassxc**: A cross-platform password manager.
+
+### Tools Installed via Other Methods
+
+- **Tor Browser**: A privacy-focused web browser that anonymizes your web traffic.
+- **PhoneInfoga**: A tool for information gathering and phone number reconnaissance.
+- **youtube-dl**: A command-line program to download videos from various websites (installed via pipx).
+- **dnsdumpster**: A domain research tool (installed via pip3).
+- **h8mail**: An email hunter and breacher (installed via pipx).
+- **toutatis**: A tool for domain and DNS enumeration (installed via pipx).
+- **tweepy**: A library for accessing the Twitter API (installed via pip3).
+- **onionsearch**: A tool for searching hidden services (installed via pip3).
+- **sn0int**: A powerful open-source intelligence gathering tool (installed via APT).
+
+This collection of tools provides a comprehensive suite for performing various OSINT tasks, including web crawling, metadata extraction, social network analysis, and more.
+
+---
