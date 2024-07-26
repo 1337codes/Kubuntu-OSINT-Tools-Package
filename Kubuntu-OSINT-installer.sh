@@ -1,148 +1,188 @@
 #!/bin/bash
 
-# Define the log file location
-LOG_DIR="$HOME/Desktop/logs"
-LOG_FILE="$LOG_DIR/osint_install_error.log"
+# Update the system and install necessary dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y wget curl git python3 python3-pip build-essential virtualenv pipx
 
-# Cleanup function to kill the background keep-alive process
-cleanup() {
-    # Kill the background keep-alive process
-    kill %1
+# Ensure pipx is set up correctly
+pipx ensurepath
+
+# Create Trace Labs directory in applications menu
+mkdir -p ~/.local/share/applications/Trace_Labs
+
+# Function to create desktop entry
+create_desktop_entry() {
+    local name=$1
+    local exec=$2
+    local icon=$3
+    local category=$4
+    local folder=$5
+
+    mkdir -p ~/.local/share/applications/Trace_Labs/$folder
+
+    echo "[Desktop Entry]
+Name=$name
+Exec=$exec
+Icon=$icon
+Type=Application
+Categories=$category;
+" > ~/.local/share/applications/Trace_Labs/$folder/$name.desktop
 }
 
-# Set trap to call cleanup function upon script exit
-trap cleanup EXIT
+# Install Firefox (regular version since ESR is not available)
+sudo apt install -y firefox
+create_desktop_entry "Firefox" "/usr/bin/firefox" "firefox" "Network;WebBrowser;" "Browsers"
 
-# More frequent keep-alive: every 30 seconds
-while true; do
-    sudo -n true
-    sleep 30
-done 2>/dev/null &
+# Install Tor Browser
+TOR_VERSION=$(curl -s https://www.torproject.org/download/ | grep -oP 'tor-browser-linux64-\K[0-9.]+(?=\.tar\.xz)' | head -n 1)
+wget "https://www.torproject.org/dist/torbrowser/${TOR_VERSION}/tor-browser-linux64-${TOR_VERSION}_ALL.tar.xz"
+tar -xf "tor-browser-linux64-${TOR_VERSION}_ALL.tar.xz"
+~/tor-browser_en-US/start-tor-browser.desktop --register-app
+create_desktop_entry "Tor Browser" "$HOME/tor-browser_en-US/start-tor-browser.desktop" "tor-browser" "Network;WebBrowser;" "Browsers"
 
-# Initialize the log file and create the log directory
-init_error_log() {
-    mkdir -p "$LOG_DIR"
-    echo "Starting OSINT Tools Installation: $(date)" > "$LOG_FILE"
-}
+# Function to install Python packages in a virtual environment
+install_python_package() {
+    local name=$1
+    local repo_url=$2
+    local folder=$3
 
-# Function to add an error message to the log file
-add_to_error_log() {
-    echo "$1" >> "$LOG_FILE"
-}
-
-display_log_contents() {
-    if [ -s "$LOG_FILE" ]; then
-        echo "Installation completed with errors. Review the log below:"
-        cat "$LOG_FILE"
-    else
-        echo "Installation completed successfully with no errors."
-    fi
-}
-
-# Function to update and upgrade the system
-update_system() {
-    sudo sed -i '/^deb .*vulns\.sexy/d' /etc/apt/sources.list /etc/apt/sources.list.d/*.list
-    sudo apt-get update || { echo "Failed to update package lists"; add_to_error_log "Failed to update package lists"; }
-    sudo apt-get dist-upgrade -y || { echo "Failed to upgrade the system"; add_to_error_log "Failed to upgrade the system"; }
-}
-
-# Function to set up the PATH
-setup_path() {
-    if ! grep -q 'export PATH=$PATH:$HOME/.local/bin' ~/.bashrc; then
-        echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc
-    fi
-    . ~/.bashrc || { echo "Failed to source .bashrc"; add_to_error_log "Failed to source .bashrc"; }
-}
-
-install_tools() {
-    local tools=(curl python3-pip pipx)
-    for tool in "${tools[@]}"; do
-        if ! dpkg -l | grep -qw $tool; then
-            sudo apt install $tool -y 2>>"$LOG_FILE" || {
-                echo "Failed to install $tool"
-                add_to_error_log "Failed to install $tool, see log for details."
-            }
+    if [ ! -d ~/$name ]; then
+        git clone $repo_url ~/$name
+        cd ~/$name
+        python3 -m venv venv
+        source venv/bin/activate
+        if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
         else
-            echo "$tool is already installed."
+            echo "No requirements.txt file found for $name"
         fi
-    done
-}
-
-install_tor_browser() {
-    local download_dir="$HOME/Downloads"
-    mkdir -p "$download_dir"
-
-    local tor_browser_link="https://www.torproject.org/dist/torbrowser/13.0.14/tor-browser-linux-x86_64-13.0.14.tar.xz"
-    local tor_browser_dir="$download_dir/tor-browser"
-    local tor_browser_tarball="$download_dir/$(basename "$tor_browser_link")"
-
-    curl -L "$tor_browser_link" -o "$tor_browser_tarball" || { echo "Failed to download Tor Browser"; add_to_error_log "Failed to download Tor Browser"; return 1; }
-    curl -L "${tor_browser_link}.asc" -o "${tor_browser_tarball}.asc" || { echo "Failed to download Tor Browser signature"; add_to_error_log "Failed to download Tor Browser signature"; return 1; }
-
-    # Import Tor Browser GPG key
-    gpg --keyserver hkps://keys.openpgp.org --recv-keys 0x4E2C6E8793298290 || { echo "Failed to import Tor Browser GPG key"; add_to_error_log "Failed to import Tor Browser GPG key"; return 1; }
-
-    gpgv --keyring ~/.gnupg/pubring.kbx "${tor_browser_tarball}.asc" "$tor_browser_tarball" || { echo "Failed to verify Tor Browser signature"; add_to_error_log "Failed to verify Tor Browser signature"; return 1; }
-
-    tar -xf "$tor_browser_tarball" -C "$download_dir" || { echo "Failed to extract Tor Browser"; add_to_error_log "Failed to extract Tor Browser"; return 1; }
-
-    if [ -f "$tor_browser_dir/start-tor-browser.desktop" ]; then
-        cd "$tor_browser_dir" || { echo "Failed to navigate to Tor Browser directory"; add_to_error_log "Failed to navigate to Tor Browser directory"; return 1; }
-        ./start-tor-browser.desktop --register-app || { echo "Failed to register Tor Browser as a desktop application"; add_to_error_log "Failed to register Tor Browser as a desktop application"; return 1; }
+        deactivate
+        create_desktop_entry "$name" "bash -c 'source ~/\"$name\"/venv/bin/activate && python3 ~/$name/$name.py'" "utilities-terminal" "Utility;" "$folder"
     else
-        echo "start-tor-browser.desktop not found in $tor_browser_dir"
-        add_to_error_log "start-tor-browser.desktop not found in $tor_browser_dir"
-        return 1
+        echo "$name directory already exists, skipping clone."
     fi
 }
 
-install_phoneinfoga() {
-    bash <(curl -sSL https://raw.githubusercontent.com/sundowndev/phoneinfoga/master/support/scripts/install) || { echo "Failed to download and execute PhoneInfoga install script"; add_to_error_log "Failed to download and execute PhoneInfoga install script"; return 1; }
+# Install DumpsterDiver
+install_python_package "DumpsterDiver" "https://github.com/securing/DumpsterDiver.git" "Data_Analysis"
 
-    if [ ! -f "./phoneinfoga" ]; then
-        echo "PhoneInfoga executable not found after installation script."
-        add_to_error_log "PhoneInfoga executable not found after installation script."
-        return 1;
-    fi
+# Install Exifprobe
+if [ ! -d ~/exifprobe ]; then
+    git clone https://github.com/hfiguiere/exifprobe.git ~/exifprobe
+    cd ~/exifprobe
+    make
+    sudo make install
+    create_desktop_entry "Exifprobe" "/usr/local/bin/exifprobe" "utilities-terminal" "Utility;" "Data_Analysis"
+else
+    echo "Exifprobe directory already exists, skipping clone."
+fi
 
-    sudo mv ./phoneinfoga /usr/local/bin/phoneinfoga || { echo "Failed to move PhoneInfoga to /usr/local/bin"; add_to_error_log "Failed to move PhoneInfoga to /usr/local/bin"; return 1; }
-}
+# Install Stegosuite
+sudo apt install -y stegosuite
+create_desktop_entry "Stegosuite" "/usr/bin/stegosuite" "stegosuite" "Utility;" "Data_Analysis"
 
-install_python_packages() {
-    pipx install youtube-dl || { echo "Failed to install youtube-dl"; add_to_error_log "Failed to install youtube-dl"; }
-    pipx install h8mail || { echo "Failed to install h8mail"; add_to_error_log "Failed to install h8mail"; }
-    pipx install toutatis || { echo "Failed to install toutatis"; add_to_error_log "Failed to install toutatis"; }
+# Install Domainfy (OSRFramework) using pipx
+pipx install osrframework --force
+create_desktop_entry "Domainfy" "pipx run osrframework domainfy" "utilities-terminal" "Utility;" "Domains"
 
-    python3 -m venv osint-env || { echo "Failed to create virtual environment"; add_to_error_log "Failed to create virtual environment"; return 1; }
-    source osint-env/bin/activate || { echo "Failed to activate virtual environment"; add_to_error_log "Failed to activate virtual environment"; return 1; }
+# Install Sublist3r
+install_python_package "Sublist3r" "https://github.com/aboul3la/Sublist3r.git" "Domains"
 
-    python3 -m pip install dnsdumpster || { echo "Failed to install dnsdumpster"; add_to_error_log "Failed to install dnsdumpster"; }
-    python3 -m pip install tweepy || { echo "Failed to install tweepy"; add_to_error_log "Failed to install tweepy"; }
-    python3 -m pip install onionsearch || { echo "Failed to install onionsearch"; add_to_error_log "Failed to install onionsearch"; }
+# Install HTTrack
+sudo apt install -y httrack
+create_desktop_entry "HTTrack" "/usr/bin/httrack" "httrack" "Network;" "Downloaders"
 
-    deactivate
-}
+# Install Metagoofil
+install_python_package "metagoofil" "https://github.com/opsdisk/metagoofil.git" "Downloaders"
 
-update_tj_null_joplin_notebook() {
-    if [ -d "$HOME/Desktop/TJ-OSINT-Notebook" ]; then
-        cd "$HOME/Desktop/TJ-OSINT-Notebook" && git pull || { echo "Failed to update TJ-OSINT-Notebook"; add_to_error_log "Failed to update TJ-OSINT-Notebook"; return 1; }
-    else
-        cd "$HOME/Desktop" && git clone https://github.com/tjnull/TJ-OSINT-Notebook.git || { echo "Failed to clone TJ-OSINT-Notebook"; add_to_error_log "Failed to clone TJ-OSINT-Notebook"; return 1; }
-    fi
-}
+# Install WebHTTrack
+sudo apt install -y webhttrack
+create_desktop_entry "WebHTTrack" "/usr/bin/webhttrack" "webhttrack" "Network;" "Downloaders"
 
-# Invalidate the sudo timestamp before exiting
-sudo -k
+# Install Youtube-DL
+sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
+sudo chmod a+rx /usr/local/bin/youtube-dl
+create_desktop_entry "Youtube-DL" "/usr/local/bin/youtube-dl" "youtube-dl" "Network;" "Downloaders"
 
-# Main script execution
-init_error_log
+# Install Checkfy (OSRFramework) using pipx
+pipx install osrframework --force
+create_desktop_entry "Checkfy" "pipx run osrframework checkfy" "utilities-terminal" "Utility;" "Email"
 
-update_system
-setup_path
-install_tools
-install_tor_browser
-install_phoneinfoga
-install_python_packages
-update_tj_null_joplin_notebook
+# Install Infoga
+install_python_package "Infoga" "https://github.com/m4ll0k/Infoga.git" "Email"
 
-display_log_contents
+# Install Mailfy (OSRFramework) using pipx
+pipx install osrframework --force
+create_desktop_entry "Mailfy" "pipx run osrframework mailfy" "utilities-terminal" "Utility;" "Email"
+
+# Install theHarvester
+install_python_package "theHarvester" "https://github.com/laramies/theHarvester.git" "Email"
+
+# Install h8mail
+install_python_package "h8mail" "https://github.com/khast3x/h8mail.git" "Email"
+
+# Install OSRFramework using pipx
+pipx install osrframework --force
+create_desktop_entry "OSRFramework" "pipx run osrframework" "utilities-terminal" "Utility;" "Frameworks"
+
+# Install sn0int
+if [ ! -d ~/sn0int ]; then
+    git clone https://github.com/kpcyrd/sn0int.git ~/sn0int
+    cd ~/sn0int
+    ./build.sh
+    create_desktop_entry "sn0int" "~/sn0int/sn0int" "utilities-terminal" "Utility;" "Frameworks"
+else
+    echo "sn0int directory already exists, skipping clone."
+fi
+
+# Install Spiderfoot
+install_python_package "Spiderfoot" "https://github.com/smicallef/spiderfoot.git" "Frameworks"
+
+# Install Maltego
+wget https://maltego-downloads.s3.us-east-2.amazonaws.com/linux/Maltego.v4.2.17.14553.deb
+sudo dpkg -i Maltego.v4.2.17.14553.deb
+sudo apt --fix-broken install -y
+create_desktop_entry "Maltego" "/usr/bin/maltego" "maltego" "Utility;" "Frameworks"
+
+# Install OnionSearch
+install_python_package "OnionSearch" "https://github.com/megadose/OnionSearch.git" "Frameworks"
+
+# Install Phonefy (OSRFramework) using pipx
+pipx install osrframework --force
+create_desktop_entry "Phonefy" "pipx run osrframework phonefy" "utilities-terminal" "Utility;" "Phone_Numbers"
+
+# Install PhoneInfoga
+install_python_package "PhoneInfoga" "https://github.com/sundowndev/phoneinfoga.git" "Phone_Numbers"
+
+# Install Instaloader
+pip3 install instaloader
+create_desktop_entry "Instaloader" "instaloader" "utilities-terminal" "Utility;" "Social_Media"
+
+# Install Searchfy (OSRFramework) using pipx
+pipx install osrframework --force
+create_desktop_entry "Searchfy" "pipx run osrframework searchfy" "utilities-terminal" "Utility;" "Social_Media"
+
+# Install Tiktok Scraper
+install_python_package "tiktok-scraper" "https://github.com/drawrowfly/tiktok-scraper.git" "Social_Media"
+
+# Install Twayback
+install_python_package "Twayback" "https://github.com/humandecoded/twayback.git" "Social_Media"
+
+# Install Stweet
+install_python_package "Stweet" "https://github.com/markowanga/stweet.git" "Social_Media"
+
+# Install Alias Generator (OSRFramework) using pipx
+pipx install osrframework --force
+create_desktop_entry "Alias Generator" "pipx run osrframework alias_generator" "utilities-terminal" "Utility;" "Usernames"
+
+# Install Usufy (OSRFramework) using pipx
+pipx install osrframework --force
+create_desktop_entry "Usufy" "pipx run osrframework usufy" "utilities-terminal" "Utility;" "Usernames"
+
+# Install Photon
+install_python_package "Photon" "https://github.com/s0md3v/Photon.git" "Other_Tools"
+
+# Install Sherlock
+install_python_package "Sherlock" "https://github.com/sherlock-project/sherlock.git" "Other_Tools"
+
+echo "Installation of OSINT tools completed!"
